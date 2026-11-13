@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محرر PDF الاحترافي</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- خطوط عربية من Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;700&family=Tajawal:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- المكتبات -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- شريط الأدوات العلوي -->
+        <div class="toolbar">
+            <button id="openFile" class="btn" title="فتح PDF">📂 فتح</button>
+            <button id="addImage" class="btn" title="إضافة صورة">🖼️ صورة</button>
+            <button id="addText" class="btn" title="إضافة نص">✏️ نص</button>
+            <button id="addSignature" class="btn" title="توقيع إلكتروني">✍️ توقيع</button>
+            <button id="ocrButton" class="btn" title="تحليل صورة">🔍 OCR</button>
+            <button id="imageToPdf" class="btn" title="صور إلى PDF">📷 صور→PDF</button>
+            
+            <div class="separator"></div>
+            
+            <button id="addPage" class="btn" title="إضافة صفحة">➕ صفحة</button>
+            <button id="deletePage" class="btn" title="حذف الصفحة">🗑️ حذف</button>
+            <button id="rotatePage" class="btn" title="تدوير الصفحة">🔄 تدوير</button>
+            <button id="toggleOrientation" class="btn" title="عمودي/أفقي">📐 اتجاه</button>
+            
+            <div class="separator"></div>
+            
+            <button id="savePdf" class="btn btn-primary" title="حفظ PDF">💾 حفظ</button>
+        </div>
+
+        <!-- شريط التنسيق -->
+        <div class="format-toolbar">
+            <label>الخط:</label>
+            <select id="fontSelect">
+                <option value="Cairo">Cairo</option>
+                <option value="Tajawal">Tajawal</option>
+                <option value="Amiri">Amiri</option>
+                <option value="Noto Naskh Arabic">Noto Naskh Arabic</option>
+                <option value="Scheherazade New">Scheherazade New</option>
+                <option value="Arial">Arial</option>
+                <option value="Traditional Arabic">Traditional Arabic</option>
+            </select>
+            
+            <label>الحجم:</label>
+            <input type="number" id="fontSize" value="16" min="8" max="72">
+            
+            <label>اللون:</label>
+            <input type="color" id="fontColor" value="#000000">
+            
+            <label>الوزن:</label>
+            <select id="fontWeight">
+                <option value="400">عادي</option>
+                <option value="700">عريض</option>
+            </select>
+        </div>
+
+        <!-- شريط التنقل -->
+        <div class="navigation-bar">
+            <button id="zoomOut" class="btn-small">−</button>
+            <span id="zoomLevel">100%</span>
+            <button id="zoomIn" class="btn-small">+</button>
+            
+            <div class="separator"></div>
+            
+            <button id="prevPage" class="btn-small">◀</button>
+            <span id="pageInfo">0 / 0</span>
+            <button id="nextPage" class="btn-small">▶</button>
+        </div>
+
+        <!-- منطقة العمل -->
+        <div class="workspace">
+            <div id="pdfContainer" class="pdf-container">
+                <div class="welcome-message">
+                    <h2>🎨 مرحباً بك في محرر PDF الاحترافي</h2>
+                    <p>اضغط على "فتح" للبدء في التعديل</p>
+                    <div class="features-list">
+                        <span>✅ إضافة صور ونصوص</span>
+                        <span>✅ تحليل OCR</span>
+                        <span>✅ توقيع إلكتروني</span>
+                        <span>✅ تحويل صور إلى PDF</span>
+                        <span>✅ تحكم كامل بالصفحات</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- شريط الحالة -->
+        <div class="status-bar">
+            <span id="status">جاهز</span>
+            <span id="cursorPos"></span>
+        </div>
+    </div>
+
+    <!-- مودالات -->
+    <div id="signatureModal" class="modal">
+        <div class="modal-content">
+            <h3>التوقيع الإلكتروني</h3>
+            <canvas id="signatureCanvas" width="500" height="200"></canvas>
+            <div class="modal-buttons">
+                <button id="clearSignature" class="btn">مسح</button>
+                <button id="saveSignature" class="btn btn-primary">حفظ</button>
+                <button id="cancelSignature" class="btn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- المدخلات المخفية -->
+    <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+    <input type="file" id="imageToPdfInput" accept="image/*" multiple style="display: none;">
+
+    <script src="app.js"></script>
+</body>
+</html>

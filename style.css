@@ -1,0 +1,310 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    background: #f5f5f5;
+    direction: rtl;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.toolbar {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    padding: 12px 15px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.format-toolbar {
+    background: #34495e;
+    padding: 10px 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.navigation-bar {
+    background: #2c3e50;
+    padding: 8px 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn {
+    background: #34495e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn:hover {
+    background: #3d566e;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: #27ae60;
+}
+
+.btn-primary:hover {
+    background: #229954;
+}
+
+.btn-small {
+    background: #34495e;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-small:hover {
+    background: #3d566e;
+}
+
+.separator {
+    width: 1px;
+    height: 28px;
+    background: #7f8c8d;
+    margin: 0 5px;
+}
+
+.toolbar label,
+.format-toolbar label {
+    color: white;
+    font-size: 13px;
+}
+
+.toolbar select,
+.toolbar input,
+.format-toolbar select,
+.format-toolbar input {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #7f8c8d;
+    background: white;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.workspace {
+    flex: 1;
+    overflow: auto;
+    background: #95a5a6;
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.pdf-container {
+    background: white;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    position: relative;
+    min-height: 500px;
+    transition: all 0.3s;
+}
+
+.pdf-container.landscape {
+    transform-origin: center;
+}
+
+.welcome-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 600px;
+    color: #7f8c8d;
+    padding: 40px;
+}
+
+.welcome-message h2 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-size: 28px;
+}
+
+.welcome-message p {
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+.features-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    max-width: 600px;
+}
+
+.features-list span {
+    background: #ecf0f1;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #2c3e50;
+}
+
+.status-bar {
+    background: #2c3e50;
+    color: white;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+/* العناصر القابلة للتعديل */
+.editable-element {
+    position: absolute;
+    cursor: move;
+    border: 2px dashed transparent;
+    user-select: none;
+}
+
+.editable-element:hover {
+    border-color: #3498db;
+}
+
+.editable-element.selected {
+    border-color: #e74c3c;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+}
+
+.editable-element img {
+    display: block;
+    pointer-events: none;
+}
+
+.resize-handle {
+    width: 12px;
+    height: 12px;
+    background: #3498db;
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.resize-handle.tl { top: -6px; left: -6px; cursor: nw-resize; }
+.resize-handle.tr { top: -6px; right: -6px; cursor: ne-resize; }
+.resize-handle.bl { bottom: -6px; left: -6px; cursor: sw-resize; }
+.resize-handle.br { bottom: -6px; right: -6px; cursor: se-resize; }
+
+.text-element {
+    padding: 5px;
+    min-width: 100px;
+    min-height: 30px;
+    outline: none;
+    direction: rtl;
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+}
+
+.text-element[contenteditable="true"] {
+    cursor: text;
+}
+
+canvas {
+    display: block;
+}
+
+/* المودال */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.modal-content h3 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+#signatureCanvas {
+    border: 2px dashed #3498db;
+    border-radius: 5px;
+    cursor: crosshair;
+    background: white;
+}
+
+.modal-buttons {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* مؤشر التحميل */
+.loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 20px 40px;
+    border-radius: 10px;
+    z-index: 2000;
+    font-size: 16px;
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
