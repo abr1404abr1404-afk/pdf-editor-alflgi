@@ -135,10 +135,6 @@ body {
     transition: all 0.3s;
 }
 
-.pdf-container.landscape {
-    transform-origin: center;
-}
-
 .welcome-message {
     display: flex;
     flex-direction: column;
@@ -185,7 +181,6 @@ body {
     font-size: 13px;
 }
 
-/* العناصر القابلة للتعديل */
 .editable-element {
     position: absolute;
     cursor: move;
@@ -240,7 +235,6 @@ canvas {
     display: block;
 }
 
-/* المودال */
 .modal {
     display: none;
     position: fixed;
@@ -284,7 +278,6 @@ canvas {
     justify-content: center;
 }
 
-/* مؤشر التحميل */
 .loading {
     position: fixed;
     top: 50%;
@@ -296,15 +289,4 @@ canvas {
     border-radius: 10px;
     z-index: 2000;
     font-size: 16px;
-}
-
-.loading::after {
-    content: '...';
-    animation: dots 1.5s infinite;
-}
-
-@keyframes dots {
-    0%, 20% { content: '.'; }
-    40% { content: '..'; }
-    60%, 100% { content: '...'; }
 }

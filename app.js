@@ -1,5 +1,5 @@
-// تعطيل الـ worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+// إعداد PDF.js - استخدام worker من نفس الـ CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 // المتغيرات العامة
 let pdfDoc = null;
@@ -20,6 +20,9 @@ const status = document.getElementById('status');
 const pageInfo = document.getElementById('pageInfo');
 const zoomLevel = document.getElementById('zoomLevel');
 
+console.log('✅ تم تحميل الصفحة');
+console.log('PDF.js version:', pdfjsLib.version);
+
 // ========== فتح ملف PDF ==========
 document.getElementById('openFile').addEventListener('click', () => {
     fileInput.click();
@@ -29,119 +32,91 @@ fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    console.log('📄 اسم الملف:', file.name);
-    console.log('📦 حجم الملف:', file.size, 'bytes');
-    console.log('🏷️ نوع MIME:', file.type);
-
-    // التحقق من امتداد الملف
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.pdf') && file.type !== 'application/pdf') {
-        hideLoading();
-        alert('⚠️ هذا الملف ليس PDF!\n\nالرجاء اختيار ملف بصيغة .pdf فقط.\n\nنوع الملف الحالي: ' + file.type);
-        fileInput.value = '';
-        return;
-    }
+    console.log('📄 الملف:', file.name);
+    console.log('📦 الحجم:', file.size, 'bytes');
+    console.log('🏷️ النوع:', file.type);
 
     showLoading('جاري التحقق من الملف...');
     
     try {
-        const reader = new FileReader();
-        reader.onload = async function() {
-            const arrayBuffer = reader.result;
-            const uint8Array = new Uint8Array(arrayBuffer);
-            
-            console.log('📊 حجم البيانات:', uint8Array.length, 'bytes');
-            
-            // التحقق من ترويسة PDF
-            const header = String.fromCharCode(
-                uint8Array[0], uint8Array[1], uint8Array[2], uint8Array[3], uint8Array[4]
-            );
-            console.log('🔍 ترويسة الملف:', header);
-            
-            if (header !== '%PDF-') {
-                hideLoading();
-                let errorMessage = '⚠️ هذا الملف ليس PDF صالح!\n\n';
-                
-                if (header.includes('PK')) {
-                    errorMessage += 'يبدو أنه ملف ZIP أو DOCX (Word)';
-                } else if (header.includes('Rar')) {
-                    errorMessage += 'يبدو أنه ملف RAR';
-                } else if (header.includes('PNG')) {
-                    errorMessage += 'يبدو أنه ملف PNG';
-                } else if (header.includes('GIF')) {
-                    errorMessage += 'يبدو أنه ملف GIF';
-                } else if (header.includes('JFIF')) {
-                    errorMessage += 'يبدو أنه ملف JPEG';
-                } else {
-                    errorMessage += 'الترويسة: ' + header;
-                }
-                
-                errorMessage += '\n\nالرجاء اختيار ملف PDF حقيقي.';
-                alert(errorMessage);
-                fileInput.value = '';
-                return;
-            }
-            
-            console.log('✅ الملف PDF صالح، جاري التحميل...');
-            updateStatus('جاري تحميل PDF...');
-            
-            try {
-                // تحميل PDF.js
-                pdfDoc = await pdfjsLib.getDocument({
-                    data: uint8Array.slice(),
-                    useWorkerFetch: false,
-                    isEvalSupported: false,
-                    useSystemFonts: true,
-                }).promise;
-                
-                console.log('✅ تم تحميل PDF.js - عدد الصفحات:', pdfDoc.numPages);
-                
-                // تحميل pdf-lib
-                pdfLibDoc = await PDFLib.PDFDocument.load(uint8Array.slice(), {
-                    ignoreEncryption: true,
-                });
-                
-                console.log('✅ تم تحميل pdf-lib');
-                
-                originalPdfBytes = uint8Array.slice();
-                currentPage = 1;
-                modifications = [];
-                
-                await renderPage(currentPage);
-                updateStatus('تم تحميل الملف بنجاح ✓');
-                updatePageInfo();
-                hideLoading();
-                
-            } catch (parseError) {
-                console.error('❌ خطأ في تحليل PDF:', parseError);
-                hideLoading();
-                
-                let errorMsg = '⚠️ فشل في فتح ملف PDF\n\n';
-                if (parseError.message.includes('password')) {
-                    errorMsg += 'الملف محمي بكلمة مرور!';
-                } else if (parseError.message.includes('corrupt')) {
-                    errorMsg += 'الملف تالف!';
-                } else {
-                    errorMsg += 'خطر: ' + parseError.message;
-                }
-                
-                alert(errorMsg);
-                fileInput.value = '';
-            }
-        };
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
         
-        reader.onerror = function() {
+        console.log('📊 حجم البيانات:', uint8Array.length, 'bytes');
+        
+        // التحقق من ترويسة PDF
+        const header = String.fromCharCode(
+            uint8Array[0], uint8Array[1], uint8Array[2], uint8Array[3], uint8Array[4]
+        );
+        console.log('🔍 الترويسة:', header);
+        
+        if (header !== '%PDF-') {
             hideLoading();
-            alert('❌ حدث خطأ أثناء قراءة الملف');
-            console.error('خطأ FileReader:', reader.error);
+            let errorMsg = '⚠️ هذا الملف ليس PDF صالح!\n\n';
+            
+            if (header.includes('PK')) {
+                errorMsg += 'يبدو أنه ملف ZIP أو DOCX (Word)\n';
+            } else if (header.includes('Rar')) {
+                errorMsg += 'يبدو أنه ملف RAR\n';
+            } else if (header.includes('PNG')) {
+                errorMsg += 'يبدو أنه ملف PNG\n';
+            } else if (header.includes('GIF')) {
+                errorMsg += 'يبدو أنه ملف GIF\n';
+            } else if (header.includes('JFIF')) {
+                errorMsg += 'يبدو أنه ملف JPEG\n';
+            } else {
+                errorMsg += 'الترويسة: ' + header + '\n';
+            }
+            
+            errorMsg += '\nالرجاء اختيار ملف PDF حقيقي.';
+            alert(errorMsg);
             fileInput.value = '';
-        };
+            return;
+        }
         
-        reader.readAsArrayBuffer(file);
-    } catch (error) {
+        console.log('✅ الملف PDF صالح، جاري التحميل...');
+        updateStatus('جاري تحميل PDF...');
+        
+        // تحميل PDF.js
+        pdfDoc = await pdfjsLib.getDocument({
+            data: uint8Array.slice(),
+            useWorkerFetch: false,
+            isEvalSupported: false,
+            useSystemFonts: true,
+        }).promise;
+        
+        console.log('✅ PDF.js - عدد الصفحات:', pdfDoc.numPages);
+        
+        // تحميل pdf-lib
+        pdfLibDoc = await PDFLib.PDFDocument.load(uint8Array.slice(), {
+            ignoreEncryption: true,
+        });
+        
+        console.log('✅ pdf-lib تم التحميل');
+        
+        originalPdfBytes = uint8Array.slice();
+        currentPage = 1;
+        modifications = [];
+        
+        await renderPage(currentPage);
+        updateStatus('تم تحميل الملف بنجاح ✓');
+        updatePageInfo();
         hideLoading();
-        alert('❌ حدث خطأ: ' + error.message);
-        console.error(error);
+        
+    } catch (error) {
+        console.error('❌ خطأ:', error);
+        hideLoading();
+        
+        let errorMsg = '⚠️ فشل في فتح الملف\n\n';
+        if (error.message.includes('password')) {
+            errorMsg += 'الملف محمي بكلمة مرور!';
+        } else if (error.message.includes('corrupt')) {
+            errorMsg += 'الملف تالف!';
+        } else {
+            errorMsg += error.message;
+        }
+        
+        alert(errorMsg);
         fileInput.value = '';
     }
 });
@@ -159,7 +134,7 @@ async function renderPage(num) {
         const page = await pdfDoc.getPage(num);
         const viewport = page.getViewport({ scale });
         
-        console.log('📏 أبعاد الصفحة:', viewport.width, 'x', viewport.height);
+        console.log('📏 الأبعاد:', viewport.width, 'x', viewport.height);
         
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -178,17 +153,17 @@ async function renderPage(num) {
             pdfContainer.appendChild(el);
         });
         
-        console.log('🎨 جاري رسم الصفحة...');
+        console.log('🎨 جاري الرسم...');
         await page.render({
             canvasContext: context,
             viewport: viewport
         }).promise;
         
-        console.log('✅ تم رسم الصفحة');
+        console.log('✅ تم الرسم');
         applyModifications(num);
     } catch (error) {
-        console.error('❌ خطأ في عرض الصفحة:', error);
-        alert('حدث خطأ في عرض الصفحة: ' + error.message);
+        console.error('❌ خطأ في العرض:', error);
+        alert('خطأ في عرض الصفحة: ' + error.message);
     }
 }
 
@@ -201,7 +176,7 @@ imageInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    console.log('🖼️ إضافة صورة:', file.name);
+    console.log('🖼️ صورة:', file.name);
 
     const reader = new FileReader();
     reader.onload = function(event) {
@@ -281,7 +256,7 @@ document.getElementById('addText').addEventListener('click', () => {
         weight: weight
     });
     
-    updateStatus('تم إضافة مربع نص ✓');
+    updateStatus('تم إضافة نص ✓');
 });
 
 // ========== السحب ==========
@@ -427,10 +402,10 @@ document.getElementById('ocrButton').addEventListener('click', async () => {
         });
         
         hideLoading();
-        updateStatus('تم تحليل الصورة بنجاح ✓');
+        updateStatus('تم التحليل ✓');
     } catch (error) {
         hideLoading();
-        updateStatus('حدث خطأ أثناء التحليل');
+        updateStatus('خطأ في التحليل');
         console.error(error);
     }
 });
@@ -444,7 +419,7 @@ imageToPdfInput.addEventListener('change', async (e) => {
     const files = e.target.files;
     if (!files.length) return;
     
-    showLoading('جاري إنشاء PDF من الصور...');
+    showLoading('جاري إنشاء PDF...');
     
     try {
         const { PDFDocument } = PDFLib;
@@ -472,10 +447,10 @@ imageToPdfInput.addEventListener('change', async (e) => {
         const pdfBytes = await newPdfDoc.save();
         downloadPdf(pdfBytes, 'images-to-pdf.pdf');
         hideLoading();
-        updateStatus('تم إنشاء PDF بنجاح ✓');
+        updateStatus('تم إنشاء PDF ✓');
     } catch (error) {
         hideLoading();
-        alert('حدث خطأ أثناء إنشاء PDF');
+        alert('خطأ: ' + error.message);
         console.error(error);
     }
 });
@@ -503,10 +478,10 @@ document.getElementById('addPage').addEventListener('click', async () => {
         await renderPage(currentPage);
         updatePageInfo();
         hideLoading();
-        updateStatus('تم إضافة صفحة جديدة ✓');
+        updateStatus('تم إضافة صفحة ✓');
     } catch (error) {
         hideLoading();
-        alert('حدث خطأ أثناء إضافة الصفحة');
+        alert('خطأ: ' + error.message);
         console.error(error);
     }
 });
@@ -523,9 +498,9 @@ document.getElementById('deletePage').addEventListener('click', async () => {
         return;
     }
     
-    if (!confirm(`هل تريد حذف الصفحة ${currentPage}؟`)) return;
+    if (!confirm(`حذف الصفحة ${currentPage}؟`)) return;
     
-    showLoading('جاري حذف الصفحة...');
+    showLoading('جاري الحذف...');
     
     try {
         pdfLibDoc.removePage(currentPage - 1);
@@ -544,10 +519,10 @@ document.getElementById('deletePage').addEventListener('click', async () => {
         await renderPage(currentPage);
         updatePageInfo();
         hideLoading();
-        updateStatus('تم حذف الصفحة ✓');
+        updateStatus('تم الحذف ✓');
     } catch (error) {
         hideLoading();
-        alert('حدث خطأ أثناء حذف الصفحة');
+        alert('خطأ: ' + error.message);
         console.error(error);
     }
 });
@@ -559,7 +534,7 @@ document.getElementById('rotatePage').addEventListener('click', async () => {
         return;
     }
     
-    showLoading('جاري تدوير الصفحة...');
+    showLoading('جاري التدوير...');
     
     try {
         const page = pdfLibDoc.getPage(currentPage - 1);
@@ -575,10 +550,10 @@ document.getElementById('rotatePage').addEventListener('click', async () => {
         
         await renderPage(currentPage);
         hideLoading();
-        updateStatus('تم تدوير الصفحة ✓');
+        updateStatus('تم التدوير ✓');
     } catch (error) {
         hideLoading();
-        alert('حدث خطأ أثناء التدوير');
+        alert('خطأ: ' + error.message);
         console.error(error);
     }
 });
@@ -610,12 +585,12 @@ document.getElementById('toggleOrientation').addEventListener('click', async () 
         updateStatus('تم تغيير الاتجاه ✓');
     } catch (error) {
         hideLoading();
-        alert('حدث خطأ أثناء تغيير الاتجاه');
+        alert('خطأ: ' + error.message);
         console.error(error);
     }
 });
 
-// ========== التوقيع الإلكتروني ==========
+// ========== التوقيع ==========
 document.getElementById('addSignature').addEventListener('click', () => {
     document.getElementById('signatureModal').classList.add('active');
     
@@ -635,7 +610,7 @@ document.getElementById('saveSignature').addEventListener('click', () => {
         addSignatureToPDF(dataURL);
         document.getElementById('signatureModal').classList.remove('active');
     } else {
-        alert('الرجاء رسم التوقيع أولاً');
+        alert('ارسم التوقيع أولاً');
     }
 });
 
@@ -689,7 +664,7 @@ document.getElementById('savePdf').addEventListener('click', async () => {
         return;
     }
     
-    showLoading('جاري حفظ الملف مع التعديلات...');
+    showLoading('جاري الحفظ...');
     
     try {
         await applyAllModificationsToPdfLib();
@@ -697,10 +672,10 @@ document.getElementById('savePdf').addEventListener('click', async () => {
         const pdfBytes = await pdfLibDoc.save();
         downloadPdf(pdfBytes, 'modified-document.pdf');
         hideLoading();
-        updateStatus('تم الحفظ بنجاح ✓');
+        updateStatus('تم الحفظ ✓');
     } catch (error) {
         hideLoading();
-        alert('حدث خطأ أثناء الحفظ: ' + error.message);
+        alert('خطأ: ' + error.message);
         console.error(error);
     }
 });
@@ -868,34 +843,32 @@ function applyModifications(pageNum) {
     const pageMods = modifications.filter(m => m.data.page === pageNum);
     
     pageMods.forEach(mod => {
-        if (mod.action === 'add') {
-            if (mod.type === 'image') {
-                const img = document.createElement('div');
-                img.className = 'editable-element';
-                img.dataset.type = 'image';
-                img.dataset.page = mod.data.page;
-                img.dataset.src = mod.data.src;
-                
-                const imgElement = document.createElement('img');
-                imgElement.src = mod.data.src;
-                imgElement.style.width = mod.data.width + 'px';
-                imgElement.style.height = 'auto';
-                
-                img.innerHTML = `
-                    <div class="resize-handle tl"></div>
-                    <div class="resize-handle tr"></div>
-                    <div class="resize-handle bl"></div>
-                    <div class="resize-handle br"></div>
-                `;
-                img.insertBefore(imgElement, img.firstChild);
-                
-                img.style.left = mod.data.left + 'px';
-                img.style.top = mod.data.top + 'px';
-                
-                pdfContainer.appendChild(img);
-                makeDraggable(img);
-                makeResizable(img, true);
-            }
+        if (mod.action === 'add' && mod.type === 'image') {
+            const img = document.createElement('div');
+            img.className = 'editable-element';
+            img.dataset.type = 'image';
+            img.dataset.page = mod.data.page;
+            img.dataset.src = mod.data.src;
+            
+            const imgElement = document.createElement('img');
+            imgElement.src = mod.data.src;
+            imgElement.style.width = mod.data.width + 'px';
+            imgElement.style.height = 'auto';
+            
+            img.innerHTML = `
+                <div class="resize-handle tl"></div>
+                <div class="resize-handle tr"></div>
+                <div class="resize-handle bl"></div>
+                <div class="resize-handle br"></div>
+            `;
+            img.insertBefore(imgElement, img.firstChild);
+            
+            img.style.left = mod.data.left + 'px';
+            img.style.top = mod.data.top + 'px';
+            
+            pdfContainer.appendChild(img);
+            makeDraggable(img);
+            makeResizable(img, true);
         }
     });
 }
@@ -949,7 +922,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Delete' && selectedElement) {
         selectedElement.remove();
         selectedElement = null;
-        updateStatus('تم حذف العنصر');
+        updateStatus('تم الحذف');
     }
     
     if (e.ctrlKey && e.key === 's') {
